@@ -2,6 +2,7 @@ from preprocessing.processing import get_train_data, get_test_data
 from sklearn.ensemble import RandomForestClassifier
 from fedforest.strategy import FedForest
 from fedforest.evaluator import extract_n_trees
+from sklearn.metrics import classification_report, confusion_matrix
 import numpy as np
 
 
@@ -28,34 +29,37 @@ def get_n_estimators(model, n, x_test, y_test, method, lower=True, num_features=
     return top_n
 
 
-# Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     # Slight Equilibrium Distribution
 
-    x, y = get_train_data("caida")
-    xt, yt = get_test_data("caida")
+    # inf g
+    x_g, y_g = get_train_data("global")
+    xt_g, yt_g = get_test_data("global")
+    int_g_rf = RandomForestClassifier(n_estimators=100).fit(x_g, y_g)
 
-    cls = RandomForestClassifier(n_estimators=100).fit(x, y)
-    cls1 = RandomForestClassifier(n_estimators=10).fit(x, y)
-    cls2 = RandomForestClassifier(n_estimators=10).fit(x, y)
-    cls3 = RandomForestClassifier(n_estimators=10).fit(x, y)
+    # inf 1
+    x_1, y_1 = get_train_data("caida")
+    int_1_rf = RandomForestClassifier(n_estimators=100, max_depth=6).fit(x_1, y_1)
+    top_35_inf_1 = get_n_estimators(int_1_rf, 35, x_g, y_g, method='acc')
 
-    # extract_n_trees(cls.estimators_, x, y, 'acc', lower=False, num_features=18)
+    # inf 2
+    x_2, y_2 = get_train_data("dos")
+    int_2_rf = RandomForestClassifier(n_estimators=100, max_depth=6).fit(x_2, y_2)
+    top_35_inf_2 = get_n_estimators(int_2_rf, 35, x_g, y_g, method='acc')
 
-    fed_acc = FedForest(xt, yt, 50).fit_acc(cls.estimators_)
-    fed_bic = FedForest(xt, yt, 50).fit_bic(cls.estimators_, 18)
-    fed_bic_high = FedForest(xt, yt, 50).fit_bic(cls.estimators_, 18, False)
+    # inf 3
+    x_3, y_3 = get_train_data("ids")
+    int_3_rf = RandomForestClassifier(n_estimators=100, max_depth=6).fit(x_3, y_3)
+    top_35_inf_3 = get_n_estimators(int_3_rf, 35, x_g, y_g, method='acc')
 
-    print("Fed: ", np.sum(fed_acc.predict(xt) == yt))
-    cls1.estimators_ = extract_n_trees(cls.estimators_, 50, xt, yt, 'acc')
-    print("Ext: ", np.sum(cls1.predict(xt) == yt))
+    est = top_35_inf_1 + top_35_inf_2 + top_35_inf_3
 
-    print("Fed: ", np.sum(fed_bic.predict(xt) == yt))
-    cls2.estimators_ = extract_n_trees(cls.estimators_, 50, xt, yt, 'bic', lower=True, num_features=18)
-    print("Ext: ", np.sum(cls2.predict(xt) == yt))
+    fed = FedForest(x_g, y_g, 100).fit_acc(est)
 
-    print("Fed: ", np.sum(fed_bic_high.predict(xt) == yt))
-    cls3.estimators_ = extract_n_trees(cls.estimators_, 50, xt, yt, 'bic', lower=False, num_features=18)
-    print("Ext: ", np.sum(cls3.predict(xt) == yt))
+    print("FedForest: ", np.sum(fed.predict(x_g) == y_g))
+    print(confusion_matrix(y_g, fed.predict(x_g)))
+    print(classification_report(y_g, fed.predict(x_g)))
 
-    # print(np.sum(cls.predict(xt) == yt))
+    print("Central: ", np.sum(int_g_rf.predict(x_g) == y_g))
+    print(confusion_matrix(y_g, int_g_rf.predict(x_g)))
+    print(classification_report(y_g, int_g_rf.predict(x_g)))

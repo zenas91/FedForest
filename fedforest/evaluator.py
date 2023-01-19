@@ -31,6 +31,30 @@ def acc(model, x_test, y_test):
 
 
 def extract_n_trees(estimators, num_est, x_test, y_test, method, **kwargs):
+    """
+    Evaluates all the estimators in the list and returns the specified number of estimators.
+
+    Parameters
+    ----------
+    :param estimators: list or array
+        a list of all the estimators to be evaluated.
+    :param num_est: int
+         the number of estimators to be return after evaluation.
+    :param x_test: array
+        the sample dataset with which to evaluate the estimators.
+    :param y_test: array
+        the labels of the sample dataset
+    :param method: string
+        the method to be adopted for evaluation. Only two inputs are acceptable, namely 'acc' for accuracy and 'bic' for
+        bayesian information criterion.
+    :param kwargs:
+        when BIC is used as evaluation criterion, additional information are needed.
+            'lower': a boolean value to determine if the lowest BIC is selected or the topmost.
+            'num_features': the number of features in the training dataset needed to compute the complexity of the
+            estimator.
+    :return: top 'n' estimators according to the evaluation criteria.
+    """
+
     if method.strip() != "bic" and method.strip() != "acc":
         raise ValueError("method only takes the values 'acc' and 'bic' as argument")
     if method.strip() == "bic" and kwargs['lower'] is None:

@@ -9,12 +9,12 @@ class FedForest(RandomForestClassifier):
     def __init__(self, x_test, y_test, n=100):
         RandomForestClassifier.__init__(self)
         """
-        A class used to generate a federated forest
+        A Federated Forest Classifier. It inherits the properties of random forests classifier to eliminate the need 
+        for reinventing existing wheels. However the additional methods provides a different strategy for generating the 
+        forest from trees from other forests. 
 
         Attributes
         ----------
-        estimators: list or array
-            the list of estimators from which the federated forest will be generated
         x_test: array
             a sample dataset with which the estimators will be evaluated
         y_test: array
@@ -24,9 +24,12 @@ class FedForest(RandomForestClassifier):
 
         Methods
         -------
-        random_select(num_forest)
+        fit_random(num_forest)
             Creates multiple random forests and evaluate them
-        select()
+        fit_acc(self, estimators)
+            Creates a federated forest using accuracy as the evaluation criterion
+        fit_bic(self, estimators, num_features, lower=True)
+            Creates a federated forest using bayesian information criterion.
         """
 
         self.x_test = x_test
@@ -44,6 +47,8 @@ class FedForest(RandomForestClassifier):
 
         Parameters
         ----------
+        estimators: list or array
+            the list of estimators from which the federated forest will be generated
         num_forest: int
             The number of random forests to be generated (default=10)
 
@@ -69,11 +74,35 @@ class FedForest(RandomForestClassifier):
         return leading_est
 
     def fit_acc(self, estimators):
+        """
+        Evaluates and select the best performing estimators from the provided list of estimators based on accuracy and
+        creates a new Federated Forest
+
+        Parameters
+        ----------
+        estimators: list or array
+            the list of estimators from which the federated forest will be generated
+        :return:
+        """
         self.fit(self.x_test, self.y_test)
         self.estimators_ = extract_n_trees(estimators, self.n, self.x_test, self.y_test, 'acc')
         return self
 
     def fit_bic(self, estimators, num_features, lower=True):
+        """
+        Evaluates and select the best performing estimators from the provided list of estimators based on BIC and
+        creates a new Federated Forest
+
+        Parameters
+        ----------
+        estimators: list or array
+            the list of estimators from which the federated forest will be generated
+        num_features: int
+            the number of features in the dataset
+        lower: boolean
+            specifies if the lower bound of upper bound estimators are selected when using BIC.
+        :return: returns a FedForest classifier
+        """
         if num_features is None:
             raise ValueError("num_features cannot be None")
 
