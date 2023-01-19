@@ -1,11 +1,13 @@
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import ShuffleSplit
+from .evaluator import extract_n_trees
 import numpy as np
 
 
-class FedForest:
+class FedForest(RandomForestClassifier):
 
-    def __init__(self, estimators, x_test, y_test, n=100):
+    def __init__(self, x_test, y_test, n=100):
+        RandomForestClassifier.__init__(self)
         """
         A class used to generate a federated forest
 
@@ -19,16 +21,23 @@ class FedForest:
             the label of the sample dataset
         n: int
             the number of estimators to be selected for the FedForest (default=100)
+
+        Methods
+        -------
+        random_select(num_forest)
+            Creates multiple random forests and evaluate them
+        select()
         """
-        self.estimators = estimators
+
         self.x_test = x_test
         self.y_test = y_test
         self.n = n
+        self.estimators_ = None
 
         if self.n < 10:
             raise ValueError("n must be greater than 10")
 
-    def random_select(self, num_forest):
+    def fit_random(self, estimators, num_forest=10):
         """
         Generates a number of forest from the estimators randomly, all having n estimators. The forest are then
         evaluated and the best forest is selected
@@ -36,7 +45,7 @@ class FedForest:
         Parameters
         ----------
         num_forest: int
-            The number of random forests to be generated
+            The number of random forests to be generated (default=10)
 
         :return: The best performing forest as a random forest classifier
         """
@@ -52,15 +61,24 @@ class FedForest:
 
         for i in range(len(indices)):
             if i == 0:
-                leading_est.estimators_ = self.estimators[indices[i]]
-            test_est.estimators_ = self.estimators[indices[i]]
+                leading_est.estimators_ = estimators[indices[i]]
+            test_est.estimators_ = estimators[indices[i]]
             if np.sum(leading_est.predict(self.x_test)) <= np.sum(test_est.predict(self.x_test)):
-                leading_est.estimators_ = self.estimators[indices[i]]
+                leading_est.estimators_ = estimators[indices[i]]
 
         return leading_est
 
-    def select(self):
-        pass
+    def fit_acc(self, estimators):
+        self.fit(self.x_test, self.y_test)
+        self.estimators_ = extract_n_trees(estimators, self.n, self.x_test, self.y_test, 'acc')
+        return self
 
-    def fit(self, method="acc or bic", lower=True):
-        pass
+    def fit_bic(self, estimators, num_features, lower=True):
+        if num_features is None:
+            raise ValueError("num_features cannot be None")
+
+        self.fit(self.x_test, self.y_test)
+        self.estimators_ = extract_n_trees(estimators, self.n, self.x_test, self.y_test, 'bic',
+                                           lower=lower, num_features=num_features)
+
+        return self

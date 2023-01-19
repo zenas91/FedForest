@@ -12,7 +12,7 @@ index = pd.Index(['fwd_packet_length_max', 'flow_packet_length_max', 'bwd_packet
                   'fwd_packet_length_min', 'fwd_avg_num_packets', 'bwd_packet_length_std', 'fwd_num_packets',
                   'flow_avg_num_packets', 'flow_total_length_packets', 'label'])
 
-base = '../classifier/final-experiment/data/selected/'
+base = '../../../ML/classifier/final-experiment/data/selected/'
 
 
 def get_train_data(data_name):
